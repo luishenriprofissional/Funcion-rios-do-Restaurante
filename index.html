@@ -77,7 +77,7 @@
       overflow-y: auto;
     }
 
-    .modal input {
+    .modal input, .modal select {
       display: block;
       margin: 10px 0;
       padding: 8px;
@@ -141,8 +141,16 @@
 
     <h4>Histórico de Punições</h4>
     <div id="punishmentList">Sem punições</div>
-    <input type="text" id="punishmentInput" placeholder="Adicionar punição">
+    
+    <select id="punishmentSelect">
+      <option value="">-- Selecione uma punição --</option>
+      <option value="Infração">Infração</option>
+      <option value="Primeira Punição">Primeira Punição</option>
+      <option value="Segunda Punição">Segunda Punição</option>
+      <option value="Terceira Punição">Terceira Punição</option>
+    </select>
     <button onclick="addPunishment()">Adicionar Punição</button>
+    
     <br><br>
     <button onclick="closeProfile()">Fechar</button>
   </div>
@@ -166,7 +174,10 @@
           <td>${emp.id}</td>
           <td><a href="#" onclick="openProfile(${index})">${emp.name}</a></td>
           <td>${emp.role}</td>
-          <td><button onclick="editEmployee(${index})">Editar</button></td>
+          <td>
+            <button onclick="editEmployee(${index})">Editar</button>
+            <button onclick="deleteEmployee(${index})">Excluir</button>
+          </td>
         </tr>`;
         tableBody.innerHTML += row;
       });
@@ -213,6 +224,14 @@
       document.getElementById("formContainer").style.display = "block";
     }
 
+    function deleteEmployee(index) {
+      if (confirm("Tem certeza que deseja excluir este funcionário?")) {
+        employees.splice(index, 1);
+        localStorage.setItem("employees", JSON.stringify(employees));
+        renderEmployees();
+      }
+    }
+
     function openProfile(index) {
       profileIndex = index;
       document.getElementById("profileName").innerText = employees[index].name;
@@ -240,12 +259,15 @@
     }
 
     function addPunishment() {
-      let input = document.getElementById("punishmentInput");
-      if (input.value.trim() !== "") {
-        employees[profileIndex].punishments.push({ text: input.value, applied: false });
+      let select = document.getElementById("punishmentSelect");
+      let value = select.value;
+      if (value) {
+        employees[profileIndex].punishments.push({ text: value, applied: false });
         localStorage.setItem("employees", JSON.stringify(employees));
         renderPunishments();
-        input.value = "";
+        select.value = "";
+      } else {
+        alert("Selecione um tipo de punição!");
       }
     }
 
