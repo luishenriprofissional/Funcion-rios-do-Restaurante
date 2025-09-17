@@ -2,156 +2,65 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Sistema de Funcionários</title>
+  <title>Funcionários</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 20px;
-      background: #f4f4f4;
     }
 
-    h1 {
-      text-align: center;
-    }
-
-    #searchBar {
-      display: block;
-      margin: 20px auto;
-      padding: 10px;
-      width: 50%;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-
+    /* Estilo da tabela principal */
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 10px;
-      background: #fff;
+      margin-top: 20px;
     }
 
     table, th, td {
-      border: 1px solid #ddd;
-      text-align: center;
+      border: 1px solid #ccc;
     }
 
     th, td {
-      padding: 12px;
+      padding: 8px;
+      text-align: left;
     }
 
-    #addEmployee {
-      position: fixed;
-      bottom: 20px;
-      left: 20px;
-      padding: 10px 15px;
-      background: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
+    th {
+      background: #f5f5f5;
     }
 
-    #totalEmployees {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: #333;
-      color: white;
-      padding: 10px 15px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-    }
-
-    #reloadPunishments {
-      background: #f44336;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 16px;
-      padding: 4px 8px;
-    }
-
-    #formContainer, #profileContainer, #roleCountContainer {
+    /* Modal */
+    .modal {
       display: none;
       position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
       background: white;
       padding: 20px;
-      border: 2px solid #444;
       border-radius: 10px;
-      box-shadow: 0px 5px 10px rgba(0,0,0,0.3);
-      width: 400px;
-      max-height: 80%;
-      overflow-y: auto;
+      min-width: 300px;
+      max-width: 500px;
+      box-shadow: 0px 0px 10px rgba(0,0,0,0.3);
     }
 
-    #formContainer input, #formContainer select, 
-    #profileContainer input, #profileContainer select {
-      display: block;
-      margin: 10px 0;
-      padding: 8px;
-      width: 95%;
-    }
-
-    #formContainer button, #profileContainer button, #roleCountContainer button {
-      margin-top: 10px;
-      padding: 8px 12px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    .editBtn {
-      background: none;
-      border: 1px solid #333;
-      padding: 5px;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    .editBtn::before {
-      content: "✏️";
-    }
-
-    .deleteBtn {
-      background: #ff4d4d;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      padding: 5px 8px;
-      cursor: pointer;
-      font-size: 14px;
-      margin-left: 5px;
-    }
-
-    .removePunishmentBtn {
-      background: none;
-      color: red;
-      border: none;
-      font-size: 16px;
-      cursor: pointer;
-      padding: 0 5px;
-    }
-
+    /* Lista de punições */
     .punishmentItem {
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
       margin: 5px 0;
       padding: 5px;
-      background: #f9f9f9;
       border: 1px solid #ccc;
       border-radius: 5px;
     }
 
-    .punishmentItem span {
-      flex-grow: 1;
+    .punishmentItem label {
+      flex: 1;
     }
 
     /* Checkbox customizado */
@@ -163,331 +72,124 @@
       border: 2px solid #555;
       border-radius: 3px;
       cursor: pointer;
+      display: inline-block;
+      vertical-align: middle;
+      background-color: red; /* Vermelho quando não marcado */
       position: relative;
-      background-color: red;
     }
 
     .punishmentItem input[type="checkbox"]:checked {
-      background-color: green;
+      background-color: green; /* Verde quando marcado */
       border-color: green;
     }
 
     .punishmentItem input[type="checkbox"]:checked::after {
-      content: "X";
+      content: "✔";
       color: black;
-      font-size: 12px;
+      font-size: 12px; /* tamanho proporcional */
       font-weight: bold;
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -55%);
     }
+
+    .close-btn {
+      margin-top: 15px;
+      padding: 5px 10px;
+      background: #ccc;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
-  <h1>Gerenciamento de Funcionários</h1>
 
-  <input type="text" id="searchBar" placeholder="Pesquisar por Nome ou ID...">
-
-  <table id="employeeTable">
+  <h2>Lista de Funcionários</h2>
+  <table>
     <thead>
       <tr>
-        <th>ID</th>
         <th>Nome</th>
         <th>Cargo</th>
+        <th>Pendências</th>
         <th>Ações</th>
-        <th>⚠️Pendências</th>
       </tr>
     </thead>
-    <tbody></tbody>
+    <tbody>
+      <tr>
+        <td>Manu</td>
+        <td>Cozinheiro</td>
+        <td id="pendencia-manu">Primeira punição não aplicada</td>
+        <td><button onclick="abrirHistorico('Manu', 285, 'Cozinheiro')">Ver Histórico</button></td>
+      </tr>
+    </tbody>
   </table>
 
-  <button id="addEmployee">+ Cadastrar Funcionário</button>
-  <div id="totalEmployees">
-    <span>Total: 0</span>
-    <button id="reloadPunishments">🔄</button>
+  <!-- Modal -->
+  <div class="modal" id="modalHistorico">
+    <div class="modal-content">
+      <h3 id="nomeFuncionario">Nome</h3>
+      <p><strong>ID:</strong> <span id="idFuncionario"></span></p>
+      <p><strong>Cargo:</strong> <span id="cargoFuncionario"></span></p>
+      <h4>Histórico de Punições</h4>
+      <div id="listaPunicoes">
+        <!-- Punições serão inseridas aqui -->
+      </div>
+      <select id="tipoPunicao">
+        <option value="Primeira Punição">Primeira Punição</option>
+        <option value="Segunda Punição">Segunda Punição</option>
+        <option value="Infração">Infração</option>
+      </select>
+      <button onclick="adicionarPunicao()">Adicionar Punição</button>
+      <br><br>
+      <button class="close-btn" onclick="fecharHistorico()">Fechar</button>
+    </div>
   </div>
-
-  <!-- Formulário -->
-  <div id="formContainer">
-    <h3>Novo Funcionário</h3>
-    <input type="text" id="idInput" placeholder="ID">
-    <input type="text" id="nameInput" placeholder="Nome">
-    <select id="roleInput">
-      <option value="">Selecione o Cargo</option>
-      <option>Atendente</option>
-      <option>Caixa</option>
-      <option>Garçom</option>
-      <option>Cozinheiro</option>
-      <option>Supervisor</option>
-      <option>Gerente</option>
-    </select>
-    <button onclick="saveEmployee()">Salvar</button>
-    <button onclick="closeForm()">Cancelar</button>
-  </div>
-
-  <!-- Perfil -->
-  <div id="profileContainer">
-    <h3 id="profileName"></h3>
-    <p><b>ID:</b> <span id="profileId"></span></p>
-    <p><b>Cargo:</b> <span id="profileRole"></span></p>
-
-    <h4>Histórico de Punições</h4>
-    <div id="punishmentList">Sem punições.</div>
-
-    <select id="punishmentSelect">
-      <option value="">Selecione uma punição</option>
-      <option>Infração</option>
-      <option>Primeira Punição</option>
-      <option>Segunda Punição</option>
-      <option>Terceira Punição</option>
-    </select>
-    <button onclick="addPunishment()">Adicionar Punição</button>
-
-    <br><br>
-    <button onclick="closeProfile()">Fechar</button>
-  </div>
-
-  <!-- Contagem de cargos -->
-  <div id="roleCountContainer">
-    <h3>Funcionários por Cargo</h3>
-    <div id="roleCountList"></div>
-    <button onclick="closeRoleCount()">Fechar</button>
-  </div>
-
-  <audio id="addSound" src="https://actions.google.com/sounds/v1/cartoon/pop.ogg"></audio>
-  <audio id="deleteSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
-  <audio id="errorSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
-  <audio id="confirmSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
-  <audio id="checkSound" src="https://actions.google.com/sounds/v1/cartoon/wood_peck.ogg"></audio>
 
   <script>
-    let employees = JSON.parse(localStorage.getItem("employees")) || [];
-    let currentProfileIndex = null;
+    const modal = document.getElementById("modalHistorico");
+    const nomeFuncionario = document.getElementById("nomeFuncionario");
+    const idFuncionario = document.getElementById("idFuncionario");
+    const cargoFuncionario = document.getElementById("cargoFuncionario");
+    const listaPunicoes = document.getElementById("listaPunicoes");
 
-    const tableBody = document.querySelector("#employeeTable tbody");
-    const totalEmployees = document.getElementById("totalEmployees").querySelector("span");
+    function abrirHistorico(nome, id, cargo) {
+      nomeFuncionario.innerText = nome;
+      idFuncionario.innerText = id;
+      cargoFuncionario.innerText = cargo;
 
-    const roleOrder = {
-      "Gerente": 6,
-      "Supervisor": 5,
-      "Cozinheiro": 4,
-      "Garçom": 3,
-      "Caixa": 2,
-      "Atendente": 1
-    };
+      // Exemplo de punições carregadas
+      listaPunicoes.innerHTML = `
+        <div class="punishmentItem">
+          <label>Primeira Punição</label>
+          <input type="checkbox" />
+          <button onclick="removerPunicao(this)">X</button>
+        </div>
+      `;
 
-    function renderEmployees(filter = "") {
-      tableBody.innerHTML = "";
-
-      let filtered = employees
-        .filter(emp =>
-          emp.name.toLowerCase().includes(filter.toLowerCase()) ||
-          emp.id.toLowerCase().includes(filter.toLowerCase())
-        )
-        .sort((a, b) => roleOrder[b.role] - roleOrder[a.role]);
-
-      filtered.forEach((emp, index) => {
-        let pendencias = emp.punishments.filter(p => !p.applied).map(p => `${p.type}`);
-        let pendenciaText = pendencias.length > 0 ? pendencias.join(", ") : "Nenhuma";
-
-        let row = `
-          <tr>
-            <td>${emp.id}</td>
-            <td><a href="#" onclick="openProfile(${employees.indexOf(emp)})">${emp.name}</a></td>
-            <td>${emp.role}</td>
-            <td>
-              <button class="editBtn" onclick="editEmployee(${employees.indexOf(emp)})"></button>
-              <button class="deleteBtn" onclick="deleteEmployee(${employees.indexOf(emp)})">X</button>
-            </td>
-            <td>${pendenciaText}</td>
-          </tr>`;
-        tableBody.innerHTML += row;
-      });
-
-      totalEmployees.innerText = "Total: " + employees.length;
+      modal.style.display = "flex";
     }
 
-    document.getElementById("searchBar").addEventListener("input", (e) => {
-      renderEmployees(e.target.value);
-    });
-
-    document.getElementById("addEmployee").addEventListener("click", () => {
-      document.getElementById("formContainer").style.display = "block";
-    });
-
-    document.getElementById("reloadPunishments").addEventListener("click", () => {
-      if (confirm("Deseja remover TODAS as punições de todos os funcionários?")) {
-        employees.forEach(emp => emp.punishments = []);
-        localStorage.setItem("employees", JSON.stringify(employees));
-        renderEmployees();
-        if (currentProfileIndex !== null) renderPunishments();
-      }
-    });
-
-    document.getElementById("totalEmployees").addEventListener("click", () => {
-      renderRoleCount();
-      document.getElementById("roleCountContainer").style.display = "block";
-    });
-
-    function saveEmployee() {
-      let id = document.getElementById("idInput").value;
-      let name = document.getElementById("nameInput").value;
-      let role = document.getElementById("roleInput").value;
-
-      if (id && name && role) {
-        employees.push({ id, name, role, punishments: [] });
-        localStorage.setItem("employees", JSON.stringify(employees));
-        renderEmployees();
-        closeForm();
-        document.getElementById("addSound").play();
-      } else {
-        alert("Preencha todos os campos!");
-      }
+    function fecharHistorico() {
+      modal.style.display = "none";
     }
 
-    function editEmployee(index) {
-      let emp = employees[index];
-      document.getElementById("idInput").value = emp.id;
-      document.getElementById("nameInput").value = emp.name;
-      document.getElementById("roleInput").value = emp.role;
-
-      document.getElementById("formContainer").style.display = "block";
-
-      document.querySelector("#formContainer h3").innerText = "Editar Funcionário";
-      document.querySelector("#formContainer button").onclick = function () {
-        emp.id = document.getElementById("idInput").value;
-        emp.name = document.getElementById("nameInput").value;
-        emp.role = document.getElementById("roleInput").value;
-        localStorage.setItem("employees", JSON.stringify(employees));
-        renderEmployees();
-        closeForm();
-      };
+    function adicionarPunicao() {
+      const tipo = document.getElementById("tipoPunicao").value;
+      const div = document.createElement("div");
+      div.classList.add("punishmentItem");
+      div.innerHTML = `
+        <label>${tipo}</label>
+        <input type="checkbox" />
+        <button onclick="removerPunicao(this)">X</button>
+      `;
+      listaPunicoes.appendChild(div);
     }
 
-    function deleteEmployee(index) {
-      if (confirm("Deseja remover este funcionário?")) {
-        employees.splice(index, 1);
-        localStorage.setItem("employees", JSON.stringify(employees));
-        renderEmployees();
-        document.getElementById("deleteSound").play();
-      }
+    function removerPunicao(btn) {
+      btn.parentElement.remove();
     }
-
-    function openProfile(index) {
-      currentProfileIndex = index;
-      let emp = employees[index];
-
-      document.getElementById("profileName").innerText = emp.name;
-      document.getElementById("profileId").innerText = emp.id;
-      document.getElementById("profileRole").innerText = emp.role;
-
-      renderPunishments();
-      document.getElementById("profileContainer").style.display = "block";
-    }
-
-    function renderPunishments() {
-      let emp = employees[currentProfileIndex];
-      let container = document.getElementById("punishmentList");
-      container.innerHTML = "";
-
-      if (emp.punishments.length === 0) {
-        container.innerText = "Sem punições.";
-      } else {
-        emp.punishments.forEach((p, i) => {
-          let div = document.createElement("div");
-          div.className = "punishmentItem";
-          div.innerHTML = `
-            <span>${p.type}</span>
-            <input type="checkbox" ${p.applied ? "checked disabled" : ""} onchange="toggleApplied(${i})">
-            <button class="removePunishmentBtn" onclick="removePunishment(${i})">X</button>
-          `;
-          container.appendChild(div);
-        });
-      }
-    }
-
-    function addPunishment() {
-      let type = document.getElementById("punishmentSelect").value;
-      let role = employees[currentProfileIndex].role;
-
-      if (
-        type === "Infração" &&
-        (role === "Garçom" || role === "Cozinheiro" || role === "Supervisor" || role === "Gerente")
-      ) {
-        alert("Erro: O funcionário não pode receber esse tipo de punição, pois essa advertência é válida somente para os 2 primeiros cargos.");
-        document.getElementById("errorSound").play();
-        return;
-      }
-
-      if (type) {
-        employees[currentProfileIndex].punishments.push({ type, applied: false });
-        localStorage.setItem("employees", JSON.stringify(employees));
-        renderPunishments();
-        renderEmployees();
-      } else {
-        alert("Selecione um tipo de punição!");
-      }
-    }
-
-    function toggleApplied(i) {
-      if (!employees[currentProfileIndex].punishments[i].applied) {
-        employees[currentProfileIndex].punishments[i].applied = true;
-        localStorage.setItem("employees", JSON.stringify(employees));
-        document.getElementById("checkSound").play();
-        renderPunishments();
-        renderEmployees();
-      }
-    }
-
-    function removePunishment(i) {
-      employees[currentProfileIndex].punishments.splice(i, 1);
-      localStorage.setItem("employees", JSON.stringify(employees));
-      renderPunishments();
-      renderEmployees();
-    }
-
-    function closeProfile() {
-      document.getElementById("profileContainer").style.display = "none";
-    }
-
-    function closeForm() {
-      document.getElementById("formContainer").style.display = "none";
-      document.querySelector("#formContainer h3").innerText = "Novo Funcionário";
-      document.querySelector("#formContainer button").onclick = saveEmployee;
-      document.getElementById("idInput").value = "";
-      document.getElementById("nameInput").value = "";
-      document.getElementById("roleInput").value = "";
-    }
-
-    function renderRoleCount() {
-      let roleCount = {
-        "Gerente": 0,
-        "Supervisor": 0,
-        "Cozinheiro": 0,
-        "Garçom": 0,
-        "Caixa": 0,
-        "Atendente": 0
-      };
-
-      employees.forEach(emp => {
-        if (roleCount[emp.role] !== undefined) {
-          roleCount[emp.role]++;
-        }
-      });
-
-      let list = document.getElementById("roleCountList");
-      list.innerHTML = "";
-      for (let role in roleCount) {
-        list.innerHTML += `<p><b>${role}:</b> ${roleCount[role]}</p>`;
-      }
-    }
-
-    function closeRoleCount() {
-      document.getElementById("roleCountContainer").style.display = "none";
-    }
-
-    renderEmployees();
   </script>
 </body>
 </html>
