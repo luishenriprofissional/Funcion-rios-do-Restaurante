@@ -61,10 +61,10 @@
       border-radius: 8px;
     }
 
-    .modal {
+    #formContainer, #profileContainer {
       display: none;
       position: fixed;
-      top: 30%;
+      top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
       background: white;
@@ -73,63 +73,75 @@
       border-radius: 10px;
       box-shadow: 0px 5px 10px rgba(0,0,0,0.3);
       width: 400px;
-      max-height: 80vh;
+      max-height: 80%;
       overflow-y: auto;
     }
 
-    .modal input, .modal select {
+    #formContainer input, #profileContainer input, #profileContainer select {
       display: block;
       margin: 10px 0;
       padding: 8px;
       width: 95%;
     }
 
-    .modal button {
+    #formContainer button, #profileContainer button {
       margin-top: 10px;
-      padding: 10px;
+      padding: 8px 12px;
       border: none;
-      border-radius: 8px;
+      border-radius: 6px;
       cursor: pointer;
     }
 
-    .punishment-item {
+    .editBtn {
+      background: none;
+      border: 1px solid #333;
+      padding: 5px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .editBtn::before {
+      content: "✏️";
+    }
+
+    .deleteBtn {
+      background: red;
+      color: white;
+      border-radius: 50%;
+      border: none;
+      width: 28px;
+      height: 28px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .punishmentItem {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin: 5px 0;
-      background: #f8f8f8;
       padding: 5px;
+      background: #f9f9f9;
+      border: 1px solid #ccc;
       border-radius: 5px;
     }
 
-    /* Botão editar (lápis quadrado) */
-    .edit-btn {
-      background: #eee;
-      border: 1px solid #aaa;
-      border-radius: 5px;
-      padding: 5px 8px;
-      cursor: pointer;
-      font-size: 14px;
+    .punishmentItem span {
+      flex-grow: 1;
     }
 
-    .edit-btn::before {
-      content: "✏️";
+    .punishmentItem input {
+      margin-left: 10px;
     }
 
-    /* Botão excluir (X branco dentro de círculo vermelho) */
-    .delete-btn {
-      background: red;
-      border: none;
-      border-radius: 50%;
+    .removePunishmentBtn {
+      background: darkred;
       color: white;
-      font-weight: bold;
+      border: none;
+      border-radius: 4px;
+      padding: 3px 6px;
+      margin-left: 10px;
       cursor: pointer;
-      width: 28px;
-      height: 28px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
     }
   </style>
 </head>
@@ -153,9 +165,9 @@
   <button id="addEmployee">+ Cadastrar Funcionário</button>
   <div id="totalEmployees">Total: 0</div>
 
-  <!-- Formulário Novo / Editar -->
-  <div id="formContainer" class="modal">
-    <h3 id="formTitle">Novo Funcionário</h3>
+  <!-- Formulário -->
+  <div id="formContainer">
+    <h3>Novo Funcionário</h3>
     <input type="text" id="idInput" placeholder="ID">
     <input type="text" id="nameInput" placeholder="Nome">
     <input type="text" id="roleInput" placeholder="Cargo">
@@ -163,41 +175,37 @@
     <button onclick="closeForm()">Cancelar</button>
   </div>
 
-  <!-- Perfil do Funcionário -->
-  <div id="profileContainer" class="modal">
+  <!-- Perfil -->
+  <div id="profileContainer">
     <h3 id="profileName"></h3>
-    <p><strong>ID:</strong> <span id="profileId"></span></p>
-    <p><strong>Cargo:</strong> <span id="profileRole"></span></p>
+    <p><b>ID:</b> <span id="profileId"></span></p>
+    <p><b>Cargo:</b> <span id="profileRole"></span></p>
 
     <h4>Histórico de Punições</h4>
-    <div id="punishmentList">Sem punições</div>
-    
+    <div id="punishmentList">Sem punições.</div>
+
     <select id="punishmentSelect">
-      <option value="">-- Selecione uma punição --</option>
-      <option value="Infração">Infração</option>
-      <option value="Primeira Punição">Primeira Punição</option>
-      <option value="Segunda Punição">Segunda Punição</option>
-      <option value="Terceira Punição">Terceira Punição</option>
+      <option value="">Selecione uma punição</option>
+      <option>Infração</option>
+      <option>Primeira Punição</option>
+      <option>Segunda Punição</option>
+      <option>Terceira Punição</option>
     </select>
     <button onclick="addPunishment()">Adicionar Punição</button>
-    
+
     <br><br>
     <button onclick="closeProfile()">Fechar</button>
   </div>
 
-  <!-- Sons -->
-  <audio id="addSound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3"></audio>
-  <audio id="deleteSound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
+  <audio id="addSound" src="https://actions.google.com/sounds/v1/cartoon/pop.ogg"></audio>
+  <audio id="deleteSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
 
   <script>
     let employees = JSON.parse(localStorage.getItem("employees")) || [];
-    let editIndex = null;
-    let profileIndex = null;
+    let currentProfileIndex = null;
 
     const tableBody = document.querySelector("#employeeTable tbody");
     const totalEmployees = document.getElementById("totalEmployees");
-    const addSound = document.getElementById("addSound");
-    const deleteSound = document.getElementById("deleteSound");
 
     function renderEmployees(filter = "") {
       tableBody.innerHTML = "";
@@ -205,18 +213,21 @@
         emp.name.toLowerCase().includes(filter.toLowerCase()) ||
         emp.id.toLowerCase().includes(filter.toLowerCase())
       );
+
       filtered.forEach((emp, index) => {
-        let row = `<tr>
-          <td>${emp.id}</td>
-          <td><a href="#" onclick="openProfile(${index})">${emp.name}</a></td>
-          <td>${emp.role}</td>
-          <td>
-            <button class="edit-btn" onclick="editEmployee(${index})"></button>
-            <button class="delete-btn" onclick="deleteEmployee(${index})">X</button>
-          </td>
-        </tr>`;
+        let row = `
+          <tr>
+            <td>${emp.id}</td>
+            <td><a href="#" onclick="openProfile(${index})">${emp.name}</a></td>
+            <td>${emp.role}</td>
+            <td>
+              <button class="editBtn" onclick="editEmployee(${index})"></button>
+              <button class="deleteBtn" onclick="deleteEmployee(${index})">X</button>
+            </td>
+          </tr>`;
         tableBody.innerHTML += row;
       });
+
       totalEmployees.innerText = "Total: " + employees.length;
     }
 
@@ -225,8 +236,6 @@
     });
 
     document.getElementById("addEmployee").addEventListener("click", () => {
-      editIndex = null;
-      document.getElementById("formTitle").innerText = "Novo Funcionário";
       document.getElementById("formContainer").style.display = "block";
     });
 
@@ -236,93 +245,110 @@
       let role = document.getElementById("roleInput").value;
 
       if (id && name && role) {
-        if (editIndex === null) {
-          employees.push({ id, name, role, punishments: [] });
-          addSound.play(); // Som de adicionar
-        } else {
-          employees[editIndex].id = id;
-          employees[editIndex].name = name;
-          employees[editIndex].role = role;
-        }
+        employees.push({ id, name, role, punishments: [] });
         localStorage.setItem("employees", JSON.stringify(employees));
         renderEmployees();
         closeForm();
+        document.getElementById("addSound").play();
       } else {
         alert("Preencha todos os campos!");
       }
     }
 
     function editEmployee(index) {
-      editIndex = index;
-      document.getElementById("formTitle").innerText = "Editar Funcionário";
-      document.getElementById("idInput").value = employees[index].id;
-      document.getElementById("nameInput").value = employees[index].name;
-      document.getElementById("roleInput").value = employees[index].role;
+      let emp = employees[index];
+      document.getElementById("idInput").value = emp.id;
+      document.getElementById("nameInput").value = emp.name;
+      document.getElementById("roleInput").value = emp.role;
+
       document.getElementById("formContainer").style.display = "block";
+
+      document.querySelector("#formContainer h3").innerText = "Editar Funcionário";
+      document.querySelector("#formContainer button").onclick = function () {
+        emp.id = document.getElementById("idInput").value;
+        emp.name = document.getElementById("nameInput").value;
+        emp.role = document.getElementById("roleInput").value;
+        localStorage.setItem("employees", JSON.stringify(employees));
+        renderEmployees();
+        closeForm();
+      };
     }
 
     function deleteEmployee(index) {
-      if (confirm("Tem certeza que deseja excluir este funcionário?")) {
+      if (confirm("Deseja remover este funcionário?")) {
         employees.splice(index, 1);
         localStorage.setItem("employees", JSON.stringify(employees));
         renderEmployees();
-        deleteSound.play(); // Som de exclusão
+        document.getElementById("deleteSound").play();
       }
     }
 
     function openProfile(index) {
-      profileIndex = index;
-      document.getElementById("profileName").innerText = employees[index].name;
-      document.getElementById("profileId").innerText = employees[index].id;
-      document.getElementById("profileRole").innerText = employees[index].role;
+      currentProfileIndex = index;
+      let emp = employees[index];
+
+      document.getElementById("profileName").innerText = emp.name;
+      document.getElementById("profileId").innerText = emp.id;
+      document.getElementById("profileRole").innerText = emp.role;
+
       renderPunishments();
       document.getElementById("profileContainer").style.display = "block";
     }
 
     function renderPunishments() {
-      let list = document.getElementById("punishmentList");
-      list.innerHTML = "";
-      let punishments = employees[profileIndex].punishments || [];
-      if (punishments.length === 0) {
-        list.innerText = "Sem punições";
+      let emp = employees[currentProfileIndex];
+      let container = document.getElementById("punishmentList");
+      container.innerHTML = "";
+
+      if (emp.punishments.length === 0) {
+        container.innerText = "Sem punições.";
       } else {
-        punishments.forEach((p, i) => {
-          list.innerHTML += `
-            <div class="punishment-item">
-              <span>${p.text}</span>
-              <input type="checkbox" ${p.applied ? "checked" : ""} onchange="togglePunishment(${i})">
-            </div>`;
+        emp.punishments.forEach((p, i) => {
+          let div = document.createElement("div");
+          div.className = "punishmentItem";
+          div.innerHTML = `
+            <span>${p.type}</span>
+            <input type="checkbox" ${p.applied ? "checked" : ""} onchange="toggleApplied(${i})">
+            <button class="removePunishmentBtn" onclick="removePunishment(${i})">Remover</button>
+          `;
+          container.appendChild(div);
         });
       }
     }
 
     function addPunishment() {
-      let select = document.getElementById("punishmentSelect");
-      let value = select.value;
-      if (value) {
-        employees[profileIndex].punishments.push({ text: value, applied: false });
+      let type = document.getElementById("punishmentSelect").value;
+      if (type) {
+        employees[currentProfileIndex].punishments.push({ type, applied: false });
         localStorage.setItem("employees", JSON.stringify(employees));
         renderPunishments();
-        select.value = "";
       } else {
         alert("Selecione um tipo de punição!");
       }
     }
 
-    function togglePunishment(i) {
-      employees[profileIndex].punishments[i].applied = !employees[profileIndex].punishments[i].applied;
+    function toggleApplied(i) {
+      employees[currentProfileIndex].punishments[i].applied = !employees[currentProfileIndex].punishments[i].applied;
       localStorage.setItem("employees", JSON.stringify(employees));
     }
 
-    function closeForm() {
-      document.getElementById("formContainer").style.display = "none";
-      document.getElementById("idInput").value = "";
-      document.getElementById("nameInput").value = "";
-      document.getElementById("roleInput").value = "";
+    function removePunishment(i) {
+      employees[currentProfileIndex].punishments.splice(i, 1);
+      localStorage.setItem("employees", JSON.stringify(employees));
+      renderPunishments();
     }
 
     function closeProfile() {
       document.getElementById("profileContainer").style.display = "none";
+    }
+
+    function closeForm() {
+      document.getElementById("formContainer").style.display = "none";
+      document.querySelector("#formContainer h3").innerText = "Novo Funcionário";
+      document.querySelector("#formContainer button").onclick = saveEmployee;
+      document.getElementById("idInput").value = "";
+      document.getElementById("nameInput").value = "";
+      document.getElementById("roleInput").value = "";
     }
 
     renderEmployees();
