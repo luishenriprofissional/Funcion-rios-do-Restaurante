@@ -101,6 +101,36 @@
       padding: 5px;
       border-radius: 5px;
     }
+
+    /* Botão editar (lápis quadrado) */
+    .edit-btn {
+      background: #eee;
+      border: 1px solid #aaa;
+      border-radius: 5px;
+      padding: 5px 8px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .edit-btn::before {
+      content: "✏️";
+    }
+
+    /* Botão excluir (X branco dentro de círculo vermelho) */
+    .delete-btn {
+      background: red;
+      border: none;
+      border-radius: 50%;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      width: 28px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
@@ -155,6 +185,10 @@
     <button onclick="closeProfile()">Fechar</button>
   </div>
 
+  <!-- Sons -->
+  <audio id="addSound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3"></audio>
+  <audio id="deleteSound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
+
   <script>
     let employees = JSON.parse(localStorage.getItem("employees")) || [];
     let editIndex = null;
@@ -162,6 +196,8 @@
 
     const tableBody = document.querySelector("#employeeTable tbody");
     const totalEmployees = document.getElementById("totalEmployees");
+    const addSound = document.getElementById("addSound");
+    const deleteSound = document.getElementById("deleteSound");
 
     function renderEmployees(filter = "") {
       tableBody.innerHTML = "";
@@ -175,8 +211,8 @@
           <td><a href="#" onclick="openProfile(${index})">${emp.name}</a></td>
           <td>${emp.role}</td>
           <td>
-            <button onclick="editEmployee(${index})">Editar</button>
-            <button onclick="deleteEmployee(${index})">Excluir</button>
+            <button class="edit-btn" onclick="editEmployee(${index})"></button>
+            <button class="delete-btn" onclick="deleteEmployee(${index})">X</button>
           </td>
         </tr>`;
         tableBody.innerHTML += row;
@@ -202,6 +238,7 @@
       if (id && name && role) {
         if (editIndex === null) {
           employees.push({ id, name, role, punishments: [] });
+          addSound.play(); // Som de adicionar
         } else {
           employees[editIndex].id = id;
           employees[editIndex].name = name;
@@ -229,6 +266,7 @@
         employees.splice(index, 1);
         localStorage.setItem("employees", JSON.stringify(employees));
         renderEmployees();
+        deleteSound.play(); // Som de exclusão
       }
     }
 
