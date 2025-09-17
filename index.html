@@ -39,7 +39,6 @@
       padding: 12px;
     }
 
-    /* Botão com transparência e brilho */
     #addEmployee {
       position: fixed;
       bottom: 20px;
@@ -50,18 +49,6 @@
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      font-size: 16px;
-
-      opacity: 0.2; /* sempre começa transparente */
-      transition: opacity 1s ease;
-      animation: glow 2s infinite; /* brilho suave */
-    }
-
-    /* Animação de brilho */
-    @keyframes glow {
-      0%   { box-shadow: 0 0 0px rgba(76, 175, 80, 0.5); }
-      50%  { box-shadow: 0 0 15px rgba(76, 175, 80, 0.8); }
-      100% { box-shadow: 0 0 0px rgba(76, 175, 80, 0.5); }
     }
 
     #totalEmployees {
@@ -166,8 +153,25 @@
       flex-grow: 1;
     }
 
-    .punishmentItem input {
-      margin-left: 10px;
+    .punishmentItem input[type="checkbox"] {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border: 2px solid #555;
+      border-radius: 3px;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .punishmentItem input[type="checkbox"]:checked {
+      background-color: green;
+      border-color: green;
+    }
+
+    .punishmentItem input[type="checkbox"]:not(:checked) {
+      background-color: red;
+      border-color: red;
     }
   </style>
 </head>
@@ -183,6 +187,7 @@
         <th>Nome</th>
         <th>Cargo</th>
         <th>Ações</th>
+        <th>Pendências</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -246,7 +251,6 @@
     const tableBody = document.querySelector("#employeeTable tbody");
     const totalEmployees = document.getElementById("totalEmployees").querySelector("span");
 
-    // Definindo hierarquia
     const roleOrder = {
       "Gerente": 6,
       "Supervisor": 5,
@@ -266,7 +270,13 @@
         )
         .sort((a, b) => roleOrder[b.role] - roleOrder[a.role]);
 
-      filtered.forEach((emp) => {
+      filtered.forEach((emp, index) => {
+        let pendencias = emp.punishments
+          .filter(p => !p.applied)
+          .map(p => `${p.type} não aplicada`);
+
+        let pendenciaText = pendencias.length > 0 ? pendencias.join(", ") : "Sem pendências";
+
         let row = `
           <tr>
             <td>${emp.id}</td>
@@ -276,6 +286,7 @@
               <button class="editBtn" onclick="editEmployee(${employees.indexOf(emp)})"></button>
               <button class="deleteBtn" onclick="deleteEmployee(${employees.indexOf(emp)})">X</button>
             </td>
+            <td>${pendenciaText}</td>
           </tr>`;
         tableBody.innerHTML += row;
       });
@@ -394,6 +405,7 @@
         employees[currentProfileIndex].punishments.push({ type, applied: false });
         localStorage.setItem("employees", JSON.stringify(employees));
         renderPunishments();
+        renderEmployees();
       } else {
         alert("Selecione um tipo de punição!");
       }
@@ -405,6 +417,7 @@
         localStorage.setItem("employees", JSON.stringify(employees));
         document.getElementById("confirmSound").play();
         renderPunishments();
+        renderEmployees();
       }
     }
 
@@ -412,6 +425,7 @@
       employees[currentProfileIndex].punishments.splice(i, 1);
       localStorage.setItem("employees", JSON.stringify(employees));
       renderPunishments();
+      renderEmployees();
     }
 
     function closeProfile() {
@@ -426,24 +440,6 @@
       document.getElementById("nameInput").value = "";
       document.getElementById("roleInput").value = "";
     }
-
-    /* === EFEITO DO BOTÃO === */
-    const addEmployeeBtn = document.getElementById("addEmployee");
-    let hideTimeout;
-
-    addEmployeeBtn.addEventListener("mouseenter", () => {
-      clearTimeout(hideTimeout);
-      addEmployeeBtn.style.opacity = "1";
-      addEmployeeBtn.style.animation = "none";
-      addEmployeeBtn.style.boxShadow = "none";
-    });
-
-    addEmployeeBtn.addEventListener("mouseleave", () => {
-      hideTimeout = setTimeout(() => {
-        addEmployeeBtn.style.opacity = "0.2";
-        addEmployeeBtn.style.animation = "glow 2s infinite";
-      }, 5000);
-    });
 
     renderEmployees();
   </script>
