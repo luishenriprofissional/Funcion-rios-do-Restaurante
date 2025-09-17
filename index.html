@@ -61,7 +61,7 @@
       border-radius: 8px;
     }
 
-    #formContainer {
+    .modal {
       display: none;
       position: fixed;
       top: 30%;
@@ -72,21 +72,34 @@
       border: 2px solid #444;
       border-radius: 10px;
       box-shadow: 0px 5px 10px rgba(0,0,0,0.3);
+      width: 400px;
+      max-height: 80vh;
+      overflow-y: auto;
     }
 
-    #formContainer input {
+    .modal input {
       display: block;
       margin: 10px 0;
       padding: 8px;
       width: 95%;
     }
 
-    #formContainer button {
+    .modal button {
       margin-top: 10px;
       padding: 10px;
       border: none;
       border-radius: 8px;
       cursor: pointer;
+    }
+
+    .punishment-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 5px 0;
+      background: #f8f8f8;
+      padding: 5px;
+      border-radius: 5px;
     }
   </style>
 </head>
@@ -101,17 +114,18 @@
         <th>ID</th>
         <th>Nome</th>
         <th>Cargo</th>
+        <th>Ações</th>
       </tr>
     </thead>
-    <tbody>
-    </tbody>
+    <tbody></tbody>
   </table>
 
   <button id="addEmployee">+ Cadastrar Funcionário</button>
   <div id="totalEmployees">Total: 0</div>
 
-  <div id="formContainer">
-    <h3>Novo Funcionário</h3>
+  <!-- Formulário Novo / Editar -->
+  <div id="formContainer" class="modal">
+    <h3 id="formTitle">Novo Funcionário</h3>
     <input type="text" id="idInput" placeholder="ID">
     <input type="text" id="nameInput" placeholder="Nome">
     <input type="text" id="roleInput" placeholder="Cargo">
@@ -119,8 +133,24 @@
     <button onclick="closeForm()">Cancelar</button>
   </div>
 
+  <!-- Perfil do Funcionário -->
+  <div id="profileContainer" class="modal">
+    <h3 id="profileName"></h3>
+    <p><strong>ID:</strong> <span id="profileId"></span></p>
+    <p><strong>Cargo:</strong> <span id="profileRole"></span></p>
+
+    <h4>Histórico de Punições</h4>
+    <div id="punishmentList">Sem punições</div>
+    <input type="text" id="punishmentInput" placeholder="Adicionar punição">
+    <button onclick="addPunishment()">Adicionar Punição</button>
+    <br><br>
+    <button onclick="closeProfile()">Fechar</button>
+  </div>
+
   <script>
     let employees = JSON.parse(localStorage.getItem("employees")) || [];
+    let editIndex = null;
+    let profileIndex = null;
 
     const tableBody = document.querySelector("#employeeTable tbody");
     const totalEmployees = document.getElementById("totalEmployees");
@@ -131,8 +161,13 @@
         emp.name.toLowerCase().includes(filter.toLowerCase()) ||
         emp.id.toLowerCase().includes(filter.toLowerCase())
       );
-      filtered.forEach(emp => {
-        let row = `<tr><td>${emp.id}</td><td>${emp.name}</td><td>${emp.role}</td></tr>`;
+      filtered.forEach((emp, index) => {
+        let row = `<tr>
+          <td>${emp.id}</td>
+          <td><a href="#" onclick="openProfile(${index})">${emp.name}</a></td>
+          <td>${emp.role}</td>
+          <td><button onclick="editEmployee(${index})">Editar</button></td>
+        </tr>`;
         tableBody.innerHTML += row;
       });
       totalEmployees.innerText = "Total: " + employees.length;
@@ -143,6 +178,8 @@
     });
 
     document.getElementById("addEmployee").addEventListener("click", () => {
+      editIndex = null;
+      document.getElementById("formTitle").innerText = "Novo Funcionário";
       document.getElementById("formContainer").style.display = "block";
     });
 
@@ -152,7 +189,13 @@
       let role = document.getElementById("roleInput").value;
 
       if (id && name && role) {
-        employees.push({ id, name, role });
+        if (editIndex === null) {
+          employees.push({ id, name, role, punishments: [] });
+        } else {
+          employees[editIndex].id = id;
+          employees[editIndex].name = name;
+          employees[editIndex].role = role;
+        }
         localStorage.setItem("employees", JSON.stringify(employees));
         renderEmployees();
         closeForm();
@@ -161,11 +204,65 @@
       }
     }
 
+    function editEmployee(index) {
+      editIndex = index;
+      document.getElementById("formTitle").innerText = "Editar Funcionário";
+      document.getElementById("idInput").value = employees[index].id;
+      document.getElementById("nameInput").value = employees[index].name;
+      document.getElementById("roleInput").value = employees[index].role;
+      document.getElementById("formContainer").style.display = "block";
+    }
+
+    function openProfile(index) {
+      profileIndex = index;
+      document.getElementById("profileName").innerText = employees[index].name;
+      document.getElementById("profileId").innerText = employees[index].id;
+      document.getElementById("profileRole").innerText = employees[index].role;
+      renderPunishments();
+      document.getElementById("profileContainer").style.display = "block";
+    }
+
+    function renderPunishments() {
+      let list = document.getElementById("punishmentList");
+      list.innerHTML = "";
+      let punishments = employees[profileIndex].punishments || [];
+      if (punishments.length === 0) {
+        list.innerText = "Sem punições";
+      } else {
+        punishments.forEach((p, i) => {
+          list.innerHTML += `
+            <div class="punishment-item">
+              <span>${p.text}</span>
+              <input type="checkbox" ${p.applied ? "checked" : ""} onchange="togglePunishment(${i})">
+            </div>`;
+        });
+      }
+    }
+
+    function addPunishment() {
+      let input = document.getElementById("punishmentInput");
+      if (input.value.trim() !== "") {
+        employees[profileIndex].punishments.push({ text: input.value, applied: false });
+        localStorage.setItem("employees", JSON.stringify(employees));
+        renderPunishments();
+        input.value = "";
+      }
+    }
+
+    function togglePunishment(i) {
+      employees[profileIndex].punishments[i].applied = !employees[profileIndex].punishments[i].applied;
+      localStorage.setItem("employees", JSON.stringify(employees));
+    }
+
     function closeForm() {
       document.getElementById("formContainer").style.display = "none";
       document.getElementById("idInput").value = "";
       document.getElementById("nameInput").value = "";
       document.getElementById("roleInput").value = "";
+    }
+
+    function closeProfile() {
+      document.getElementById("profileContainer").style.display = "none";
     }
 
     renderEmployees();
