@@ -39,6 +39,7 @@
       padding: 12px;
     }
 
+    /* Botão com transparência e brilho */
     #addEmployee {
       position: fixed;
       bottom: 20px;
@@ -49,6 +50,18 @@
       border: none;
       border-radius: 8px;
       cursor: pointer;
+      font-size: 16px;
+
+      opacity: 0.2; /* sempre começa transparente */
+      transition: opacity 1s ease;
+      animation: glow 2s infinite; /* brilho suave */
+    }
+
+    /* Animação de brilho */
+    @keyframes glow {
+      0%   { box-shadow: 0 0 0px rgba(76, 175, 80, 0.5); }
+      50%  { box-shadow: 0 0 15px rgba(76, 175, 80, 0.8); }
+      100% { box-shadow: 0 0 0px rgba(76, 175, 80, 0.5); }
     }
 
     #totalEmployees {
@@ -246,7 +259,6 @@
     function renderEmployees(filter = "") {
       tableBody.innerHTML = "";
 
-      // ordenar pela hierarquia
       let filtered = employees
         .filter(emp =>
           emp.name.toLowerCase().includes(filter.toLowerCase()) ||
@@ -254,7 +266,7 @@
         )
         .sort((a, b) => roleOrder[b.role] - roleOrder[a.role]);
 
-      filtered.forEach((emp, index) => {
+      filtered.forEach((emp) => {
         let row = `
           <tr>
             <td>${emp.id}</td>
@@ -279,7 +291,6 @@
       document.getElementById("formContainer").style.display = "block";
     });
 
-    // botão reload
     document.getElementById("reloadPunishments").addEventListener("click", () => {
       if (confirm("Deseja remover TODAS as punições de todos os funcionários?")) {
         employees.forEach(emp => emp.punishments = []);
@@ -415,6 +426,24 @@
       document.getElementById("nameInput").value = "";
       document.getElementById("roleInput").value = "";
     }
+
+    /* === EFEITO DO BOTÃO === */
+    const addEmployeeBtn = document.getElementById("addEmployee");
+    let hideTimeout;
+
+    addEmployeeBtn.addEventListener("mouseenter", () => {
+      clearTimeout(hideTimeout);
+      addEmployeeBtn.style.opacity = "1";
+      addEmployeeBtn.style.animation = "none";
+      addEmployeeBtn.style.boxShadow = "none";
+    });
+
+    addEmployeeBtn.addEventListener("mouseleave", () => {
+      hideTimeout = setTimeout(() => {
+        addEmployeeBtn.style.opacity = "0.2";
+        addEmployeeBtn.style.animation = "glow 2s infinite";
+      }, 5000);
+    });
 
     renderEmployees();
   </script>
