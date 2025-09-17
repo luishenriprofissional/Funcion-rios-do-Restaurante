@@ -232,6 +232,7 @@
 
   <audio id="addSound" src="https://actions.google.com/sounds/v1/cartoon/pop.ogg"></audio>
   <audio id="deleteSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+  <audio id="errorSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
 
   <script>
     let employees = JSON.parse(localStorage.getItem("employees")) || [];
@@ -361,13 +362,26 @@
 
     function addPunishment() {
       let type = document.getElementById("punishmentSelect").value;
-      if (type) {
-        employees[currentProfileIndex].punishments.push({ type, applied: false });
-        localStorage.setItem("employees", JSON.stringify(employees));
-        renderPunishments();
-      } else {
+      let emp = employees[currentProfileIndex];
+
+      if (!type) {
         alert("Selecione um tipo de punição!");
+        return;
       }
+
+      // verificação para cargo e punição INFRAÇÃO
+      if (
+        type === "Infração" &&
+        ["Garçom","Cozinheiro","Supervisor","Gerente"].includes(emp.role)
+      ) {
+        document.getElementById("errorSound").play();
+        alert("Erro: O funcionário não pode receber esse tipo de punição, pois essa advertência é válida somente para os 2 primeiros cargos.");
+        return;
+      }
+
+      employees[currentProfileIndex].punishments.push({ type, applied: false });
+      localStorage.setItem("employees", JSON.stringify(employees));
+      renderPunishments();
     }
 
     function toggleApplied(i) {
