@@ -51,29 +51,27 @@
       cursor: pointer;
     }
 
-    #totalContainer {
+    #totalEmployees {
       position: fixed;
       bottom: 20px;
       right: 20px;
+      background: #333;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       gap: 8px;
     }
 
-    #totalEmployees {
-      background: #333;
-      color: white;
-      padding: 10px 15px;
-      border-radius: 8px;
-    }
-
-    #reloadBtn {
+    #reloadPunishments {
       background: #f44336;
       color: white;
       border: none;
-      border-radius: 8px;
-      padding: 10px 15px;
+      border-radius: 4px;
       cursor: pointer;
+      font-size: 16px;
+      padding: 4px 8px;
     }
 
     #formContainer, #profileContainer {
@@ -92,7 +90,7 @@
       overflow-y: auto;
     }
 
-    #formContainer input, #formContainer select,
+    #formContainer input, #formContainer select, 
     #profileContainer input, #profileContainer select {
       display: block;
       margin: 10px 0;
@@ -120,18 +118,7 @@
       content: "✏️";
     }
 
-    .deleteBtn {
-      background: red;
-      color: white;
-      border-radius: 50%;
-      border: none;
-      width: 28px;
-      height: 28px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-
-    .removePunishmentBtn {
+    .deleteBtn, .removePunishmentBtn {
       background: red;
       color: white;
       border-radius: 50%;
@@ -141,7 +128,6 @@
       cursor: pointer;
       font-weight: bold;
       font-size: 12px;
-      line-height: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -185,9 +171,9 @@
   </table>
 
   <button id="addEmployee">+ Cadastrar Funcionário</button>
-  <div id="totalContainer">
-    <div id="totalEmployees">Total: 0</div>
-    <button id="reloadBtn">🔄</button>
+  <div id="totalEmployees">
+    <span>Total: 0</span>
+    <button id="reloadPunishments">🔄</button>
   </div>
 
   <!-- Formulário -->
@@ -196,7 +182,7 @@
     <input type="text" id="idInput" placeholder="ID">
     <input type="text" id="nameInput" placeholder="Nome">
     <select id="roleInput">
-      <option value="">Selecione um cargo</option>
+      <option value="">Selecione o Cargo</option>
       <option>Atendente</option>
       <option>Caixa</option>
       <option>Garçom</option>
@@ -232,14 +218,15 @@
 
   <audio id="addSound" src="https://actions.google.com/sounds/v1/cartoon/pop.ogg"></audio>
   <audio id="deleteSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
-  <audio id="errorSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+  <audio id="errorSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+  <audio id="confirmSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
 
   <script>
     let employees = JSON.parse(localStorage.getItem("employees")) || [];
     let currentProfileIndex = null;
 
     const tableBody = document.querySelector("#employeeTable tbody");
-    const totalEmployees = document.getElementById("totalEmployees");
+    const totalEmployees = document.getElementById("totalEmployees").querySelector("span");
 
     function renderEmployees(filter = "") {
       tableBody.innerHTML = "";
@@ -273,9 +260,9 @@
       document.getElementById("formContainer").style.display = "block";
     });
 
-    // botão de reload para limpar punições
-    document.getElementById("reloadBtn").addEventListener("click", () => {
-      if (confirm("Remover todas as punições de todos os funcionários?")) {
+    // botão reload
+    document.getElementById("reloadPunishments").addEventListener("click", () => {
+      if (confirm("Deseja remover TODAS as punições de todos os funcionários?")) {
         employees.forEach(emp => emp.punishments = []);
         localStorage.setItem("employees", JSON.stringify(employees));
         renderEmployees();
@@ -352,7 +339,7 @@
           div.className = "punishmentItem";
           div.innerHTML = `
             <span>${p.type}</span>
-            <input type="checkbox" ${p.applied ? "checked" : ""} onchange="toggleApplied(${i})">
+            <input type="checkbox" ${p.applied ? "checked disabled" : ""} onchange="toggleApplied(${i})">
             <button class="removePunishmentBtn" onclick="removePunishment(${i})">X</button>
           `;
           container.appendChild(div);
@@ -362,31 +349,37 @@
 
     function addPunishment() {
       let type = document.getElementById("punishmentSelect").value;
-      let emp = employees[currentProfileIndex];
+      let role = employees[currentProfileIndex].role;
 
-      if (!type) {
-        alert("Selecione um tipo de punição!");
-        return;
-      }
-
-      // verificação para cargo e punição INFRAÇÃO
+      // Bloqueio para INFRAÇÃO
       if (
         type === "Infração" &&
-        ["Garçom","Cozinheiro","Supervisor","Gerente"].includes(emp.role)
+        (role === "Garçom" || role === "Cozinheiro" || role === "Supervisor" || role === "Gerente")
       ) {
-        document.getElementById("errorSound").play();
         alert("Erro: O funcionário não pode receber esse tipo de punição, pois essa advertência é válida somente para os 2 primeiros cargos.");
+        document.getElementById("errorSound").play();
         return;
       }
 
-      employees[currentProfileIndex].punishments.push({ type, applied: false });
-      localStorage.setItem("employees", JSON.stringify(employees));
-      renderPunishments();
+      if (type) {
+        employees[currentProfileIndex].punishments.push({ type, applied: false });
+        localStorage.setItem("employees", JSON.stringify(employees));
+        renderPunishments();
+      } else {
+        alert("Selecione um tipo de punição!");
+      }
     }
 
     function toggleApplied(i) {
-      employees[currentProfileIndex].punishments[i].applied = !employees[currentProfileIndex].punishments[i].applied;
-      localStorage.setItem("employees", JSON.stringify(employees));
+      // Só marca se ainda não estava aplicada
+      if (!employees[currentProfileIndex].punishments[i].applied) {
+        employees[currentProfileIndex].punishments[i].applied = true;
+        localStorage.setItem("employees", JSON.stringify(employees));
+        // toca o som de confirmação
+        document.getElementById("confirmSound").play();
+        renderPunishments();
+      }
+      // Se já estava true, não faz nada (impede desmarcar)
     }
 
     function removePunishment(i) {
