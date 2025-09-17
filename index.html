@@ -106,6 +106,14 @@
       cursor: pointer;
     }
 
+    .moveBtn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 2px 4px;
+    }
+
     .editBtn {
       background: none;
       border: 1px solid #333;
@@ -247,6 +255,8 @@
             <td><a href="#" onclick="openProfile(${index})">${emp.name}</a></td>
             <td>${emp.role}</td>
             <td>
+              <button class="moveBtn" onclick="moveUp(${index})">⬆️</button>
+              <button class="moveBtn" onclick="moveDown(${index})">⬇️</button>
               <button class="editBtn" onclick="editEmployee(${index})"></button>
               <button class="deleteBtn" onclick="deleteEmployee(${index})">X</button>
             </td>
@@ -316,6 +326,22 @@
         localStorage.setItem("employees", JSON.stringify(employees));
         renderEmployees();
         document.getElementById("deleteSound").play();
+      }
+    }
+
+    function moveUp(index) {
+      if (index > 0) {
+        [employees[index - 1], employees[index]] = [employees[index], employees[index - 1]];
+        localStorage.setItem("employees", JSON.stringify(employees));
+        renderEmployees();
+      }
+    }
+
+    function moveDown(index) {
+      if (index < employees.length - 1) {
+        [employees[index + 1], employees[index]] = [employees[index], employees[index + 1]];
+        localStorage.setItem("employees", JSON.stringify(employees));
+        renderEmployees();
       }
     }
 
