@@ -165,7 +165,6 @@
       cursor: pointer;
       position: relative;
       background-color: red;
-      margin-right: 8px;
     }
 
     .punishmentItem input[type="checkbox"]:checked {
@@ -174,7 +173,7 @@
     }
 
     .punishmentItem input[type="checkbox"]:checked::after {
-      content: "✔";
+      content: "X";
       color: black;
       font-size: 12px;
       font-weight: bold;
@@ -186,6 +185,309 @@
   </style>
 </head>
 <body>
-  <!-- resto do corpo continua igual -->
+  <h1>Gerenciamento de Funcionários</h1>
+
+  <input type="text" id="searchBar" placeholder="Pesquisar por Nome ou ID...">
+
+  <table id="employeeTable">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nome</th>
+        <th>Cargo</th>
+        <th>Ações</th>
+        <th>⚠️Pendências</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <button id="addEmployee">+ Cadastrar Funcionário</button>
+  <div id="totalEmployees">
+    <span>Total: 0</span>
+    <button id="reloadPunishments">🔄</button>
+  </div>
+
+  <!-- Formulário -->
+  <div id="formContainer">
+    <h3>Novo Funcionário</h3>
+    <input type="text" id="idInput" placeholder="ID">
+    <input type="text" id="nameInput" placeholder="Nome">
+    <select id="roleInput">
+      <option value="">Selecione o Cargo</option>
+      <option>Atendente</option>
+      <option>Caixa</option>
+      <option>Garçom</option>
+      <option>Cozinheiro</option>
+      <option>Supervisor</option>
+      <option>Gerente</option>
+    </select>
+    <button onclick="saveEmployee()">Salvar</button>
+    <button onclick="closeForm()">Cancelar</button>
+  </div>
+
+  <!-- Perfil -->
+  <div id="profileContainer">
+    <h3 id="profileName"></h3>
+    <p><b>ID:</b> <span id="profileId"></span></p>
+    <p><b>Cargo:</b> <span id="profileRole"></span></p>
+
+    <h4>Histórico de Punições</h4>
+    <div id="punishmentList">Sem punições.</div>
+
+    <select id="punishmentSelect">
+      <option value="">Selecione uma punição</option>
+      <option>Infração</option>
+      <option>Primeira Punição</option>
+      <option>Segunda Punição</option>
+      <option>Terceira Punição</option>
+    </select>
+    <button onclick="addPunishment()">Adicionar Punição</button>
+
+    <br><br>
+    <button onclick="closeProfile()">Fechar</button>
+  </div>
+
+  <!-- Contagem de cargos -->
+  <div id="roleCountContainer">
+    <h3>Funcionários por Cargo</h3>
+    <div id="roleCountList"></div>
+    <button onclick="closeRoleCount()">Fechar</button>
+  </div>
+
+  <audio id="addSound" src="https://actions.google.com/sounds/v1/cartoon/pop.ogg"></audio>
+  <audio id="deleteSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+  <audio id="errorSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+  <audio id="confirmSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+  <audio id="checkSound" src="https://actions.google.com/sounds/v1/cartoon/wood_peck.ogg"></audio>
+
+  <script>
+    let employees = JSON.parse(localStorage.getItem("employees")) || [];
+    let currentProfileIndex = null;
+
+    const tableBody = document.querySelector("#employeeTable tbody");
+    const totalEmployees = document.getElementById("totalEmployees").querySelector("span");
+
+    const roleOrder = {
+      "Gerente": 6,
+      "Supervisor": 5,
+      "Cozinheiro": 4,
+      "Garçom": 3,
+      "Caixa": 2,
+      "Atendente": 1
+    };
+
+    function renderEmployees(filter = "") {
+      tableBody.innerHTML = "";
+
+      let filtered = employees
+        .filter(emp =>
+          emp.name.toLowerCase().includes(filter.toLowerCase()) ||
+          emp.id.toLowerCase().includes(filter.toLowerCase())
+        )
+        .sort((a, b) => roleOrder[b.role] - roleOrder[a.role]);
+
+      filtered.forEach((emp, index) => {
+        let pendencias = emp.punishments.filter(p => !p.applied).map(p => `${p.type}`);
+        let pendenciaText = pendencias.length > 0 ? pendencias.join(", ") : "Nenhuma";
+
+        let row = `
+          <tr>
+            <td>${emp.id}</td>
+            <td><a href="#" onclick="openProfile(${employees.indexOf(emp)})">${emp.name}</a></td>
+            <td>${emp.role}</td>
+            <td>
+              <button class="editBtn" onclick="editEmployee(${employees.indexOf(emp)})"></button>
+              <button class="deleteBtn" onclick="deleteEmployee(${employees.indexOf(emp)})">X</button>
+            </td>
+            <td>${pendenciaText}</td>
+          </tr>`;
+        tableBody.innerHTML += row;
+      });
+
+      totalEmployees.innerText = "Total: " + employees.length;
+    }
+
+    document.getElementById("searchBar").addEventListener("input", (e) => {
+      renderEmployees(e.target.value);
+    });
+
+    document.getElementById("addEmployee").addEventListener("click", () => {
+      document.getElementById("formContainer").style.display = "block";
+    });
+
+    document.getElementById("reloadPunishments").addEventListener("click", () => {
+      if (confirm("Deseja remover TODAS as punições de todos os funcionários?")) {
+        employees.forEach(emp => emp.punishments = []);
+        localStorage.setItem("employees", JSON.stringify(employees));
+        renderEmployees();
+        if (currentProfileIndex !== null) renderPunishments();
+      }
+    });
+
+    document.getElementById("totalEmployees").addEventListener("click", () => {
+      renderRoleCount();
+      document.getElementById("roleCountContainer").style.display = "block";
+    });
+
+    function saveEmployee() {
+      let id = document.getElementById("idInput").value;
+      let name = document.getElementById("nameInput").value;
+      let role = document.getElementById("roleInput").value;
+
+      if (id && name && role) {
+        employees.push({ id, name, role, punishments: [] });
+        localStorage.setItem("employees", JSON.stringify(employees));
+        renderEmployees();
+        closeForm();
+        document.getElementById("addSound").play();
+      } else {
+        alert("Preencha todos os campos!");
+      }
+    }
+
+    function editEmployee(index) {
+      let emp = employees[index];
+      document.getElementById("idInput").value = emp.id;
+      document.getElementById("nameInput").value = emp.name;
+      document.getElementById("roleInput").value = emp.role;
+
+      document.getElementById("formContainer").style.display = "block";
+
+      document.querySelector("#formContainer h3").innerText = "Editar Funcionário";
+      document.querySelector("#formContainer button").onclick = function () {
+        emp.id = document.getElementById("idInput").value;
+        emp.name = document.getElementById("nameInput").value;
+        emp.role = document.getElementById("roleInput").value;
+        localStorage.setItem("employees", JSON.stringify(employees));
+        renderEmployees();
+        closeForm();
+      };
+    }
+
+    function deleteEmployee(index) {
+      if (confirm("Deseja remover este funcionário?")) {
+        employees.splice(index, 1);
+        localStorage.setItem("employees", JSON.stringify(employees));
+        renderEmployees();
+        document.getElementById("deleteSound").play();
+      }
+    }
+
+    function openProfile(index) {
+      currentProfileIndex = index;
+      let emp = employees[index];
+
+      document.getElementById("profileName").innerText = emp.name;
+      document.getElementById("profileId").innerText = emp.id;
+      document.getElementById("profileRole").innerText = emp.role;
+
+      renderPunishments();
+      document.getElementById("profileContainer").style.display = "block";
+    }
+
+    function renderPunishments() {
+      let emp = employees[currentProfileIndex];
+      let container = document.getElementById("punishmentList");
+      container.innerHTML = "";
+
+      if (emp.punishments.length === 0) {
+        container.innerText = "Sem punições.";
+      } else {
+        emp.punishments.forEach((p, i) => {
+          let div = document.createElement("div");
+          div.className = "punishmentItem";
+          div.innerHTML = `
+            <span>${p.type}</span>
+            <input type="checkbox" ${p.applied ? "checked disabled" : ""} onchange="toggleApplied(${i})">
+            <button class="removePunishmentBtn" onclick="removePunishment(${i})">X</button>
+          `;
+          container.appendChild(div);
+        });
+      }
+    }
+
+    function addPunishment() {
+      let type = document.getElementById("punishmentSelect").value;
+      let role = employees[currentProfileIndex].role;
+
+      if (
+        type === "Infração" &&
+        (role === "Garçom" || role === "Cozinheiro" || role === "Supervisor" || role === "Gerente")
+      ) {
+        alert("Erro: O funcionário não pode receber esse tipo de punição, pois essa advertência é válida somente para os 2 primeiros cargos.");
+        document.getElementById("errorSound").play();
+        return;
+      }
+
+      if (type) {
+        employees[currentProfileIndex].punishments.push({ type, applied: false });
+        localStorage.setItem("employees", JSON.stringify(employees));
+        renderPunishments();
+        renderEmployees();
+      } else {
+        alert("Selecione um tipo de punição!");
+      }
+    }
+
+    function toggleApplied(i) {
+      if (!employees[currentProfileIndex].punishments[i].applied) {
+        employees[currentProfileIndex].punishments[i].applied = true;
+        localStorage.setItem("employees", JSON.stringify(employees));
+        document.getElementById("checkSound").play();
+        renderPunishments();
+        renderEmployees();
+      }
+    }
+
+    function removePunishment(i) {
+      employees[currentProfileIndex].punishments.splice(i, 1);
+      localStorage.setItem("employees", JSON.stringify(employees));
+      renderPunishments();
+      renderEmployees();
+    }
+
+    function closeProfile() {
+      document.getElementById("profileContainer").style.display = "none";
+    }
+
+    function closeForm() {
+      document.getElementById("formContainer").style.display = "none";
+      document.querySelector("#formContainer h3").innerText = "Novo Funcionário";
+      document.querySelector("#formContainer button").onclick = saveEmployee;
+      document.getElementById("idInput").value = "";
+      document.getElementById("nameInput").value = "";
+      document.getElementById("roleInput").value = "";
+    }
+
+    function renderRoleCount() {
+      let roleCount = {
+        "Gerente": 0,
+        "Supervisor": 0,
+        "Cozinheiro": 0,
+        "Garçom": 0,
+        "Caixa": 0,
+        "Atendente": 0
+      };
+
+      employees.forEach(emp => {
+        if (roleCount[emp.role] !== undefined) {
+          roleCount[emp.role]++;
+        }
+      });
+
+      let list = document.getElementById("roleCountList");
+      list.innerHTML = "";
+      for (let role in roleCount) {
+        list.innerHTML += `<p><b>${role}:</b> ${roleCount[role]}</p>`;
+      }
+    }
+
+    function closeRoleCount() {
+      document.getElementById("roleCountContainer").style.display = "none";
+    }
+
+    renderEmployees();
+  </script>
 </body>
 </html>
