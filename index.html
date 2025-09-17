@@ -62,6 +62,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      cursor: pointer;
     }
 
     #reloadPunishments {
@@ -74,7 +75,7 @@
       padding: 4px 8px;
     }
 
-    #formContainer, #profileContainer {
+    #formContainer, #profileContainer, #roleCountContainer {
       display: none;
       position: fixed;
       top: 50%;
@@ -98,7 +99,7 @@
       width: 95%;
     }
 
-    #formContainer button, #profileContainer button {
+    #formContainer button, #profileContainer button, #roleCountContainer button {
       margin-top: 10px;
       padding: 8px 12px;
       border: none;
@@ -163,11 +164,11 @@
       border-radius: 3px;
       cursor: pointer;
       position: relative;
-      background-color: red; /* Vermelho padrão */
+      background-color: red;
     }
 
     .punishmentItem input[type="checkbox"]:checked {
-      background-color: green; /* Verde quando marcado */
+      background-color: green;
       border-color: green;
     }
 
@@ -195,7 +196,7 @@
         <th>Nome</th>
         <th>Cargo</th>
         <th>Ações</th>
-        <th>Pendências</th>
+        <th>⚠️Pendências</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -247,10 +248,18 @@
     <button onclick="closeProfile()">Fechar</button>
   </div>
 
+  <!-- Contagem de cargos -->
+  <div id="roleCountContainer">
+    <h3>Funcionários por Cargo</h3>
+    <div id="roleCountList"></div>
+    <button onclick="closeRoleCount()">Fechar</button>
+  </div>
+
   <audio id="addSound" src="https://actions.google.com/sounds/v1/cartoon/pop.ogg"></audio>
   <audio id="deleteSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
   <audio id="errorSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
   <audio id="confirmSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+  <audio id="checkSound" src="https://actions.google.com/sounds/v1/cartoon/wood_peck.ogg"></audio>
 
   <script>
     let employees = JSON.parse(localStorage.getItem("employees")) || [];
@@ -279,11 +288,8 @@
         .sort((a, b) => roleOrder[b.role] - roleOrder[a.role]);
 
       filtered.forEach((emp, index) => {
-        let pendencias = emp.punishments
-          .filter(p => !p.applied)
-          .map(p => `${p.type} não aplicada`);
-
-        let pendenciaText = pendencias.length > 0 ? pendencias.join(", ") : "Sem pendências";
+        let pendencias = emp.punishments.filter(p => !p.applied).map(p => `${p.type}`);
+        let pendenciaText = pendencias.length > 0 ? pendencias.join(", ") : "Nenhuma";
 
         let row = `
           <tr>
@@ -317,6 +323,11 @@
         renderEmployees();
         if (currentProfileIndex !== null) renderPunishments();
       }
+    });
+
+    document.getElementById("totalEmployees").addEventListener("click", () => {
+      renderRoleCount();
+      document.getElementById("roleCountContainer").style.display = "block";
     });
 
     function saveEmployee() {
@@ -423,7 +434,7 @@
       if (!employees[currentProfileIndex].punishments[i].applied) {
         employees[currentProfileIndex].punishments[i].applied = true;
         localStorage.setItem("employees", JSON.stringify(employees));
-        document.getElementById("confirmSound").play();
+        document.getElementById("checkSound").play();
         renderPunishments();
         renderEmployees();
       }
@@ -447,6 +458,33 @@
       document.getElementById("idInput").value = "";
       document.getElementById("nameInput").value = "";
       document.getElementById("roleInput").value = "";
+    }
+
+    function renderRoleCount() {
+      let roleCount = {
+        "Gerente": 0,
+        "Supervisor": 0,
+        "Cozinheiro": 0,
+        "Garçom": 0,
+        "Caixa": 0,
+        "Atendente": 0
+      };
+
+      employees.forEach(emp => {
+        if (roleCount[emp.role] !== undefined) {
+          roleCount[emp.role]++;
+        }
+      });
+
+      let list = document.getElementById("roleCountList");
+      list.innerHTML = "";
+      for (let role in roleCount) {
+        list.innerHTML += `<p><b>${role}:</b> ${roleCount[role]}</p>`;
+      }
+    }
+
+    function closeRoleCount() {
+      document.getElementById("roleCountContainer").style.display = "none";
     }
 
     renderEmployees();
